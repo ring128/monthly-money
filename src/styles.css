@@ -128,84 +128,87 @@ button:focus-visible {
   align-items: end;
 }
 
-.income-toggle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  min-height: 56px;
-  padding: 10px 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 8px;
-  background: #f8fafc;
+.record-type-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
-.income-toggle-row > div {
+.record-type-card {
   display: grid;
   gap: 3px;
-  min-width: 0;
+  min-height: 58px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 10px 12px;
+  text-align: left;
+  opacity: 0.72;
+  transition: opacity 140ms ease, transform 140ms ease, box-shadow 140ms ease;
 }
 
-.toggle-label {
-  color: #111827;
-  font-size: 14px;
+.record-type-card span {
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.record-type-card small {
+  color: inherit;
+  font-size: 11px;
   font-weight: 850;
+  opacity: 0.78;
 }
 
-.income-toggle-row small {
-  color: #64748b;
-  font-size: 12px;
-  font-weight: 700;
+.record-type-card.is-expense {
+  border-color: rgb(180 35 24 / 0.28);
+  color: #8a1f16;
+  background: rgb(180 35 24 / 0.08);
 }
 
-.income-switch {
-  position: relative;
-  flex: 0 0 auto;
-  width: 58px;
-  height: 34px;
-  border: 0;
-  border-radius: 999px;
+.record-type-card.is-income {
+  border-color: rgb(15 118 110 / 0.28);
+  color: #0f766e;
+  background: rgb(15 118 110 / 0.08);
+}
+
+.record-type-card.active {
+  color: #ffffff;
+  opacity: 1;
+  box-shadow: 0 8px 16px rgb(15 23 42 / 0.12);
+}
+
+.record-type-card.active.is-expense {
+  border-color: #b42318;
   background: #b42318;
-  padding: 3px;
 }
 
-.income-switch span {
-  display: block;
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
-  background: #ffffff;
-  box-shadow: 0 2px 5px rgb(15 23 42 / 0.22);
-  transition: transform 160ms ease;
-}
-
-.income-switch.on {
+.record-type-card.active.is-income {
+  border-color: #0f766e;
   background: #0f766e;
-}
-
-.income-switch.on span {
-  transform: translateX(24px);
 }
 
 .segmented {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  overflow: hidden;
-  height: 44px;
+  gap: 4px;
+  height: 48px;
+  padding: 4px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
   background: #f8fafc;
 }
 
 .segmented button {
+  border-radius: 6px;
   border: 0;
   color: #334155;
   background: transparent;
   font-weight: 800;
+  opacity: 0.68;
 }
 
 .segmented button.active {
   color: #ffffff;
+  opacity: 1;
 }
 
 .segmented button.expense {
@@ -273,11 +276,11 @@ button:focus-visible {
 }
 
 .expense {
-  color: #b42318 !important;
+  color: #b42318;
 }
 
 .income {
-  color: #0f766e !important;
+  color: #0f766e;
 }
 
 .list-row,
