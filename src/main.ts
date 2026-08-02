@@ -192,7 +192,7 @@ const renderHome = () => {
           <input id="amount-input" inputmode="numeric" placeholder="0" />
         </label>
       </div>
-      ${renderSegment("record-type", recordType)}
+      ${renderIncomeToggle(recordType)}
       <div class="genre-control">
         <label>
           <span>ジャンル</span>
@@ -312,6 +312,28 @@ const renderSegment = (name: string, value: MoneyType) => `
   </div>
 `;
 
+const renderIncomeToggle = (value: MoneyType) => {
+  const isIncome = value === "income";
+
+  return `
+    <div class="income-toggle-row">
+      <div>
+        <span class="toggle-label">収入として記録</span>
+        <small>${isIncome ? "オン: 収入ジャンルに記録" : "オフ: 支出ジャンルに記録"}</small>
+      </div>
+      <button
+        class="income-switch ${isIncome ? "on" : ""}"
+        data-action="income-toggle"
+        role="switch"
+        aria-checked="${isIncome}"
+        aria-label="収入として記録"
+      >
+        <span></span>
+      </button>
+    </div>
+  `;
+};
+
 const renderMonthSummary = (title: string, total: ReturnType<typeof getMonthTotal>) => `
   <section class="panel summary-panel">
     <h2>${title}</h2>
@@ -362,6 +384,7 @@ const handleAction = (element: HTMLElement) => {
   if (action === "record") addRecord();
   if (action === "export") exportData();
   if (action === "import") importData();
+  if (action === "income-toggle") setRecordType(recordType === "income" ? "expense" : "income");
   if (action === "record-type") setRecordType(readMoneyType(element));
   if (action === "summary-type") setSummaryType(readMoneyType(element));
   if (action === "analysis-type") setAnalysisType(readMoneyType(element));
