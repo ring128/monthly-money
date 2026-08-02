@@ -1,0 +1,17 @@
+{
+  "name": "monthly-money-memo-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run build:sw && npm run typecheck && vite build --base ./",
+    "build:sw": "tsc -p tsconfig.sw.json",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "vite": "^7.0.0"
+  }
+}

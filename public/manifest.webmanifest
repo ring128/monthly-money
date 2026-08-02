@@ -1,0 +1,18 @@
+{
+  "name": "月ごとメモ",
+  "short_name": "月ごとメモ",
+  "description": "月ごとに支出と収入をジャンル別で見る、広告なしのシンプルなお金メモ。",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f766e",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
