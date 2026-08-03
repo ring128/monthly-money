@@ -128,62 +128,37 @@ button:focus-visible {
   align-items: end;
 }
 
-.record-type-switch {
+.display-mode-switch {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.record-type-card {
-  display: grid;
-  gap: 3px;
-  min-height: 58px;
-  border: 1px solid transparent;
+  gap: 4px;
+  height: 42px;
+  margin-bottom: 14px;
+  padding: 4px;
+  border: 1px solid #cbd5e1;
   border-radius: 8px;
-  padding: 10px 12px;
-  text-align: left;
-  opacity: 0.72;
-  transition: opacity 140ms ease, transform 140ms ease, box-shadow 140ms ease;
+  background: #f8fafc;
 }
 
-.record-type-card span {
-  font-size: 16px;
-  font-weight: 900;
-}
-
-.record-type-card small {
-  color: inherit;
-  font-size: 11px;
+.display-mode-switch button {
+  border: 0;
+  border-radius: 6px;
+  color: #334155;
+  background: transparent;
+  font-size: 13px;
   font-weight: 850;
-  opacity: 0.78;
+  opacity: 0.64;
 }
 
-.record-type-card.is-expense {
-  border-color: rgb(180 35 24 / 0.28);
-  color: #8a1f16;
-  background: rgb(180 35 24 / 0.08);
-}
-
-.record-type-card.is-income {
-  border-color: rgb(15 118 110 / 0.28);
-  color: #0f766e;
-  background: rgb(15 118 110 / 0.08);
-}
-
-.record-type-card.active {
+.display-mode-switch button.active {
   color: #ffffff;
-  opacity: 1;
-  box-shadow: 0 8px 16px rgb(15 23 42 / 0.12);
-}
-
-.record-type-card.active.is-expense {
-  border-color: #b42318;
-  background: #b42318;
-}
-
-.record-type-card.active.is-income {
-  border-color: #0f766e;
   background: #0f766e;
+  opacity: 1;
+  box-shadow: 0 4px 10px rgb(15 23 42 / 0.12);
+}
+
+.display-mode-switch button:first-child.active {
+  background: #b42318;
 }
 
 .segmented {
@@ -246,6 +221,10 @@ button:focus-visible {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+}
+
+.summary-grid.expense-only {
+  grid-template-columns: 1fr;
 }
 
 .summary-grid div {

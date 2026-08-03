@@ -19,6 +19,7 @@ let screen: Screen = { name: "home" };
 let recordType: MoneyType = "expense";
 let summaryType: MoneyType = "expense";
 let analysisType: MoneyType = "expense";
+let showIncome = true;
 let selectedGenreId = firstGenreId(recordType);
 
 const persist = () => saveState(state);
@@ -43,6 +44,18 @@ const setSummaryType = (next: MoneyType) => {
 
 const setAnalysisType = (next: MoneyType) => {
   analysisType = next;
+  render();
+};
+
+const setShowIncome = (next: boolean) => {
+  showIncome = next;
+  if (!showIncome) {
+    recordType = "expense";
+    summaryType = "expense";
+    analysisType = "expense";
+    selectedGenreId = firstGenreId(recordType);
+    if (screen.name === "genre" && screen.type === "income") screen = { name: "home" };
+  }
   render();
 };
 
@@ -155,6 +168,7 @@ const render = () => {
         ${screen.name === "home" ? "<h1>月ごとメモ</h1>" : `<button class="ghost" data-action="back">戻る</button><h1>${screenTitle(screen)}</h1>`}
         ${screen.name === "home" ? `<button class="ghost" data-action="past">過去</button>` : ""}
       </header>
+      ${renderDisplayModeSwitch()}
       <main>
         ${renderScreen()}
       </main>
@@ -192,7 +206,7 @@ const renderHome = () => {
           <input id="amount-input" inputmode="numeric" placeholder="0" />
         </label>
       </div>
-      ${renderRecordTypeSwitch(recordType)}
+      ${showIncome ? renderSegment("record-type", recordType) : ""}
       <div class="genre-control">
         <label>
           <span>ジャンル</span>
@@ -208,7 +222,7 @@ const renderHome = () => {
     ${renderMonthSummary("今月", total)}
 
     <section class="panel">
-      ${renderSegment("summary-type", summaryType)}
+      ${showIncome ? renderSegment("summary-type", summaryType) : ""}
       <h2>ジャンル別</h2>
       ${renderGenreTotals(genreTotals, `${typeLabel[summaryType]}の記録なし`, "genre-current")}
     </section>
@@ -222,7 +236,7 @@ const renderMonth = (yearMonth: string) => {
   return `
     ${renderMonthSummary(formatYearMonth(yearMonth), total)}
     <section class="panel">
-      ${renderSegment("summary-type", summaryType)}
+      ${showIncome ? renderSegment("summary-type", summaryType) : ""}
       <h2>ジャンル別</h2>
       ${renderGenreTotals(genreTotals, "この月の記録なし", "genre-month")}
     </section>
@@ -251,7 +265,9 @@ const renderPast = () => {
       ${monthTotals.length === 0 ? `<p class="empty">まだ記録なし</p>` : monthTotals.map((month) => `
         <button class="list-row" data-action="open-month" data-month="${month.yearMonth}">
           <span>${formatYearMonth(month.yearMonth)}</span>
-          <strong class="${month.balance < 0 ? "expense" : "income"}">${signedYen(month.balance)}</strong>
+          ${showIncome
+            ? `<strong class="${month.balance < 0 ? "expense" : "income"}">${signedYen(month.balance)}</strong>`
+            : `<strong class="expense">${yen(month.expense)}</strong>`}
         </button>
       `).join("")}
     </section>
@@ -261,7 +277,7 @@ const renderPast = () => {
       ${yearTotals.length === 0 ? `<p class="empty">まだ記録なし</p>` : yearTotals.map((year) => `
         <button class="list-row year-row" data-action="open-year" data-year="${year.year}">
           <span>${year.year}年</span>
-          <small>収入 ${yen(year.income)} / 支出 ${yen(year.expense)}</small>
+          <small>${showIncome ? `収入 ${yen(year.income)} / 支出 ${yen(year.expense)}` : `支出 ${yen(year.expense)}`}</small>
         </button>
       `).join("")}
     </section>
@@ -277,18 +293,19 @@ const renderPast = () => {
 };
 
 const renderYear = (year: number) => {
-  const items = getGenreTotals(state.records, state.genres, analysisType, undefined, year);
+  const visibleAnalysisType = showIncome ? analysisType : "expense";
+  const items = getGenreTotals(state.records, state.genres, visibleAnalysisType, undefined, year);
   const total = items.reduce((sum, item) => sum + item.amount, 0);
 
   return `
     <section class="panel">
-      <h2>${year}年のジャンル割合</h2>
-      ${renderSegment("analysis-type", analysisType)}
+      <h2>${showIncome ? `${year}年のジャンル割合` : `${year}年の支出割合`}</h2>
+      ${showIncome ? renderSegment("analysis-type", analysisType) : ""}
       ${renderPieChart(items)}
     </section>
     <section class="panel">
       <h2>内訳</h2>
-      ${items.length === 0 ? `<p class="empty">${typeLabel[analysisType]}の記録なし</p>` : items.map((item) => `
+      ${items.length === 0 ? `<p class="empty">${typeLabel[visibleAnalysisType]}の記録なし</p>` : items.map((item) => `
         <div class="list-row static">
           <span>${escapeHtml(item.genre.name)}</span>
           <strong>${yen(item.amount)} / ${total ? Math.round(item.amount / total * 1000) / 10 : 0}%</strong>
@@ -312,17 +329,18 @@ const renderSegment = (name: string, value: MoneyType) => `
   </div>
 `;
 
-const renderRecordTypeSwitch = (value: MoneyType) => `
-  <div class="record-type-switch" role="group" aria-label="記録タイプ">
-    ${(["expense", "income"] as const).map((type) => `
+const renderDisplayModeSwitch = () => `
+  <div class="display-mode-switch" role="group" aria-label="表示モード">
+    ${([
+      { action: "show-expense-only", label: "支出だけ", active: !showIncome },
+      { action: "show-with-income", label: "収入あり", active: showIncome }
+    ] as const).map((item) => `
       <button
-        class="record-type-card is-${type} ${value === type ? "active" : ""}"
-        data-action="record-type"
-        data-type="${type}"
-        aria-pressed="${value === type}"
+        class="${item.active ? "active" : ""}"
+        data-action="${item.action}"
+        aria-pressed="${item.active}"
       >
-        <span>${typeLabel[type]}</span>
-        <small>${type === "income" ? "収入ON" : "収入OFF"}</small>
+        ${item.label}
       </button>
     `).join("")}
   </div>
@@ -331,10 +349,12 @@ const renderRecordTypeSwitch = (value: MoneyType) => `
 const renderMonthSummary = (title: string, total: ReturnType<typeof getMonthTotal>) => `
   <section class="panel summary-panel">
     <h2>${title}</h2>
-    <div class="summary-grid">
+    <div class="summary-grid ${showIncome ? "" : "expense-only"}">
       <div><span>支出</span><strong class="expense">${yen(total.expense)}</strong></div>
-      <div><span>収入</span><strong class="income">${yen(total.income)}</strong></div>
-      <div><span>差額</span><strong class="${total.balance < 0 ? "expense" : ""}">${signedYen(total.balance)}</strong></div>
+      ${showIncome ? `
+        <div><span>収入</span><strong class="income">${yen(total.income)}</strong></div>
+        <div><span>差額</span><strong class="${total.balance < 0 ? "expense" : ""}">${signedYen(total.balance)}</strong></div>
+      ` : ""}
     </div>
   </section>
 `;
@@ -378,6 +398,8 @@ const handleAction = (element: HTMLElement) => {
   if (action === "record") addRecord();
   if (action === "export") exportData();
   if (action === "import") importData();
+  if (action === "show-expense-only") setShowIncome(false);
+  if (action === "show-with-income") setShowIncome(true);
   if (action === "record-type") setRecordType(readMoneyType(element));
   if (action === "summary-type") setSummaryType(readMoneyType(element));
   if (action === "analysis-type") setAnalysisType(readMoneyType(element));
