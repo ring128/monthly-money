@@ -20,12 +20,14 @@ let recordType: MoneyType = "expense";
 let summaryType: MoneyType = "expense";
 let analysisType: MoneyType = "expense";
 let showIncome = true;
+let menuOpen = false;
 let selectedGenreId = firstGenreId(recordType);
 
 const persist = () => saveState(state);
 
 const setScreen = (next: Screen) => {
   screen = next;
+  menuOpen = false;
   render();
 };
 
@@ -49,6 +51,7 @@ const setAnalysisType = (next: MoneyType) => {
 
 const setShowIncome = (next: boolean) => {
   showIncome = next;
+  menuOpen = false;
   if (!showIncome) {
     recordType = "expense";
     summaryType = "expense";
@@ -166,9 +169,8 @@ const render = () => {
     <div class="shell">
       <header class="topbar">
         ${screen.name === "home" ? "<h1>月ごとメモ</h1>" : `<button class="ghost" data-action="back">戻る</button><h1>${screenTitle(screen)}</h1>`}
-        ${screen.name === "home" ? `<button class="ghost" data-action="past">過去</button>` : ""}
+        ${renderTopbarMenu()}
       </header>
-      ${renderDisplayModeSwitch()}
       <main>
         ${renderScreen()}
       </main>
@@ -329,20 +331,21 @@ const renderSegment = (name: string, value: MoneyType) => `
   </div>
 `;
 
-const renderDisplayModeSwitch = () => `
-  <div class="display-mode-switch" role="group" aria-label="表示モード">
-    ${([
-      { action: "show-expense-only", label: "支出だけ", active: !showIncome },
-      { action: "show-with-income", label: "収入あり", active: showIncome }
-    ] as const).map((item) => `
-      <button
-        class="${item.active ? "active" : ""}"
-        data-action="${item.action}"
-        aria-pressed="${item.active}"
-      >
-        ${item.label}
-      </button>
-    `).join("")}
+const renderTopbarMenu = () => `
+  <div class="topbar-menu">
+    <button class="menu-button" data-action="menu-toggle" aria-label="メニュー" aria-expanded="${menuOpen}">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+    ${menuOpen ? `
+      <div class="menu-panel">
+        <button class="menu-item" data-action="past">過去</button>
+        <button class="menu-item" data-action="toggle-income">
+          ${showIncome ? "収入OFFにする" : "収入ONにする"}
+        </button>
+      </div>
+    ` : ""}
   </div>
 `;
 
@@ -398,8 +401,11 @@ const handleAction = (element: HTMLElement) => {
   if (action === "record") addRecord();
   if (action === "export") exportData();
   if (action === "import") importData();
-  if (action === "show-expense-only") setShowIncome(false);
-  if (action === "show-with-income") setShowIncome(true);
+  if (action === "menu-toggle") {
+    menuOpen = !menuOpen;
+    render();
+  }
+  if (action === "toggle-income") setShowIncome(!showIncome);
   if (action === "record-type") setRecordType(readMoneyType(element));
   if (action === "summary-type") setSummaryType(readMoneyType(element));
   if (action === "analysis-type") setAnalysisType(readMoneyType(element));

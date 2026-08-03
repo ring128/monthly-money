@@ -128,37 +128,63 @@ button:focus-visible {
   align-items: end;
 }
 
-.display-mode-switch {
+.topbar-menu {
+  position: relative;
+  flex: none;
+}
+
+.menu-button {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  place-items: center;
   gap: 4px;
+  width: 42px;
   height: 42px;
-  margin-bottom: 14px;
-  padding: 4px;
   border: 1px solid #cbd5e1;
   border-radius: 8px;
-  background: #f8fafc;
+  background: #ffffff;
 }
 
-.display-mode-switch button {
+.menu-button span {
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  background: #334155;
+}
+
+.menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 10;
+  display: grid;
+  width: 170px;
+  overflow: hidden;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgb(15 23 42 / 0.16);
+}
+
+.menu-item {
+  min-height: 44px;
   border: 0;
-  border-radius: 6px;
-  color: #334155;
-  background: transparent;
-  font-size: 13px;
-  font-weight: 850;
-  opacity: 0.64;
+  border-bottom: 1px solid #e2e8f0;
+  color: #111827;
+  background: #ffffff;
+  padding: 0 14px;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 800;
 }
 
-.display-mode-switch button.active {
-  color: #ffffff;
-  background: #0f766e;
-  opacity: 1;
-  box-shadow: 0 4px 10px rgb(15 23 42 / 0.12);
+.menu-item:last-child {
+  border-bottom: 0;
 }
 
-.display-mode-switch button:first-child.active {
-  background: #b42318;
+.menu-item:hover,
+.menu-item:focus-visible {
+  background: #f8fafc;
 }
 
 .segmented {
