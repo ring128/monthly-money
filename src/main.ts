@@ -3,7 +3,7 @@ import { formatRecordDateTime, formatYearMonth, getCurrentStamp } from "./date";
 import { signedYen, yen } from "./format";
 import { renderPieChart, wirePieInteractions } from "./pie";
 import "./styles.css";
-import { loadState, normalizeState, saveState } from "./storage";
+import { loadSettings, loadState, normalizeState, saveSettings, saveState } from "./storage";
 import type { AppState, Genre, GenreTotal, MoneyRecord, MoneyType, Screen } from "./types";
 
 const typeLabel: Record<MoneyType, string> = {
@@ -15,15 +15,17 @@ const app = document.querySelector<HTMLDivElement>("#app");
 if (!app) throw new Error("App root not found");
 
 let state: AppState = loadState();
+let settings = loadSettings();
 let screen: Screen = { name: "home" };
 let recordType: MoneyType = "expense";
 let summaryType: MoneyType = "expense";
 let analysisType: MoneyType = "expense";
-let showIncome = true;
+let showIncome = settings.showIncome;
 let menuOpen = false;
 let selectedGenreId = firstGenreId(recordType);
 
 const persist = () => saveState(state);
+const persistSettings = () => saveSettings(settings);
 
 const setScreen = (next: Screen) => {
   screen = next;
@@ -51,6 +53,8 @@ const setAnalysisType = (next: MoneyType) => {
 
 const setShowIncome = (next: boolean) => {
   showIncome = next;
+  settings = { ...settings, showIncome };
+  persistSettings();
   menuOpen = false;
   if (!showIncome) {
     recordType = "expense";

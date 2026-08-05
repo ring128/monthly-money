@@ -22,6 +22,10 @@ export type AppState = {
   records: MoneyRecord[];
 };
 
+export type AppSettings = {
+  showIncome: boolean;
+};
+
 export type GenreTotal = {
   genre: Genre;
   amount: number;

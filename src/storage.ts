@@ -1,10 +1,15 @@
-import type { AppState } from "./types";
+import type { AppSettings, AppState } from "./types";
 
 const STORAGE_KEY = "monthly-money-memo-web:v1";
+const SETTINGS_KEY = "monthly-money-memo-web:settings:v1";
 
 export const emptyState: AppState = {
   genres: [],
   records: []
+};
+
+export const defaultSettings: AppSettings = {
+  showIncome: true
 };
 
 export const loadState = (): AppState => {
@@ -26,4 +31,23 @@ export const saveState = (state: AppState) => {
 export const normalizeState = (state: AppState): AppState => ({
   genres: Array.isArray(state.genres) ? state.genres : [],
   records: Array.isArray(state.records) ? state.records : []
+});
+
+export const loadSettings = (): AppSettings => {
+  const raw = localStorage.getItem(SETTINGS_KEY);
+  if (!raw) return defaultSettings;
+
+  try {
+    return normalizeSettings(JSON.parse(raw) as Partial<AppSettings>);
+  } catch {
+    return defaultSettings;
+  }
+};
+
+export const saveSettings = (settings: AppSettings) => {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+};
+
+export const normalizeSettings = (settings: Partial<AppSettings>): AppSettings => ({
+  showIncome: typeof settings.showIncome === "boolean" ? settings.showIncome : defaultSettings.showIncome
 });
