@@ -25,6 +25,8 @@ export type AppState = {
 
 export type AppSettings = {
   showIncome: boolean;
+  imageEnabled: boolean;
+  monthStartDay: number;
 };
 
 export type GenreTotal = {
@@ -50,6 +52,7 @@ export type YearTotal = {
 export type Screen =
   | { name: "home" }
   | { name: "past" }
+  | { name: "settings" }
   | { name: "month"; yearMonth: string }
   | { name: "genre"; yearMonth: string; type: MoneyType; genreId: string }
   | { name: "record"; recordId: string }

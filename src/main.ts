@@ -1,5 +1,5 @@
 import { getGenreTotals, getMonthTotal, getMonthTotals, getRecordsForGenre, getYearTotals } from "./analytics";
-import { formatRecordDateTime, formatYearMonth, getCurrentStamp } from "./date";
+import { formatRecordDateTime, formatYearMonth, getCurrentStamp, getStampForDate, getTodayInputValue, getYearMonthFromIso } from "./date";
 import { signedYen, yen } from "./format";
 import { renderPieChart, wirePieInteractions } from "./pie";
 import "./styles.css";
@@ -14,13 +14,14 @@ const typeLabel: Record<MoneyType, string> = {
 const app = document.querySelector<HTMLDivElement>("#app");
 if (!app) throw new Error("App root not found");
 
-let state: AppState = loadState();
 let settings = loadSettings();
+let state: AppState = applyMonthStartDay(loadState(), settings.monthStartDay);
 let screen: Screen = { name: "home" };
 let recordType: MoneyType = "expense";
 let summaryType: MoneyType = "expense";
 let analysisType: MoneyType = "expense";
 let showIncome = settings.showIncome;
+let imageEnabled = settings.imageEnabled;
 let menuOpen = false;
 let selectedGenreId = firstGenreId(recordType);
 let pendingImageDataUrl = "";
@@ -68,6 +69,26 @@ const setShowIncome = (next: boolean) => {
   render();
 };
 
+const setImageEnabled = (next: boolean) => {
+  imageEnabled = next;
+  settings = { ...settings, imageEnabled };
+  persistSettings();
+  if (!imageEnabled) {
+    pendingImageDataUrl = "";
+    pendingImageBusy = false;
+  }
+  render();
+};
+
+const setMonthStartDay = (next: number) => {
+  const monthStartDay = normalizeMonthStartDay(next);
+  settings = { ...settings, monthStartDay };
+  persistSettings();
+  state = applyMonthStartDay(state, monthStartDay);
+  persist();
+  render();
+};
+
 const addGenre = () => {
   const name = window.prompt(`${typeLabel[recordType]}ジャンル名`);
   const trimmed = name?.trim();
@@ -98,12 +119,13 @@ const addGenre = () => {
 const addRecord = () => {
   const titleInput = document.querySelector<HTMLInputElement>("#title-input");
   const amountInput = document.querySelector<HTMLInputElement>("#amount-input");
+  const dateInput = document.querySelector<HTMLInputElement>("#date-input");
   const genreSelect = document.querySelector<HTMLSelectElement>("#genre-select");
   const title = titleInput?.value.trim() ?? "";
   const amount = Number((amountInput?.value ?? "").replace(/[^\d]/g, ""));
   const genreId = genreSelect?.value || selectedGenreId;
 
-  if (pendingImageBusy) {
+  if (imageEnabled && pendingImageBusy) {
     showToast("画像の処理中です");
     return;
   }
@@ -120,7 +142,7 @@ const addRecord = () => {
     return;
   }
 
-  const stamp = getCurrentStamp();
+  const stamp = getStampForDate(dateInput?.value ?? getTodayInputValue(), settings.monthStartDay);
   const record: MoneyRecord = {
     id: createId("record"),
     title,
@@ -130,7 +152,7 @@ const addRecord = () => {
     createdAt: stamp.createdAt,
     yearMonth: stamp.yearMonth,
     year: stamp.year,
-    imageDataUrl: pendingImageDataUrl || undefined
+    imageDataUrl: imageEnabled ? pendingImageDataUrl || undefined : undefined
   };
 
   const nextState = {
@@ -170,7 +192,7 @@ const importData = () => {
 
     try {
       const parsed = JSON.parse(await file.text()) as AppState;
-      state = normalizeState(parsed);
+      state = applyMonthStartDay(normalizeState(parsed), settings.monthStartDay);
       selectedGenreId = firstGenreId(recordType);
       persist();
       render();
@@ -187,7 +209,7 @@ const render = () => {
     <div class="shell">
       <header class="topbar">
         ${screen.name === "home" ? "<h1>月ごとメモ</h1>" : `<button class="ghost" data-action="back">戻る</button><h1>${screenTitle(screen)}</h1>`}
-        ${renderTopbarMenu()}
+        ${screen.name === "home" ? renderTopbarMenu() : ""}
       </header>
       <main>
         ${renderScreen()}
@@ -202,6 +224,7 @@ const render = () => {
 
 const renderScreen = () => {
   if (screen.name === "past") return renderPast();
+  if (screen.name === "settings") return renderSettings();
   if (screen.name === "month") return renderMonth(screen.yearMonth);
   if (screen.name === "genre") return renderGenre(screen);
   if (screen.name === "record") return renderRecordDetail(screen.recordId);
@@ -210,7 +233,7 @@ const renderScreen = () => {
 };
 
 const renderHome = () => {
-  const currentMonth = getCurrentStamp().yearMonth;
+  const currentMonth = getCurrentStamp(settings.monthStartDay).yearMonth;
   const total = getMonthTotal(state.records, currentMonth);
   const genres = currentGenres();
   const genreTotals = getGenreTotals(state.records, state.genres, summaryType, currentMonth);
@@ -227,6 +250,10 @@ const renderHome = () => {
           <input id="amount-input" inputmode="numeric" placeholder="0" />
         </label>
       </div>
+      <label>
+        <span>日付</span>
+        <input id="date-input" type="date" value="${getTodayInputValue()}" />
+      </label>
       ${showIncome ? renderSegment("record-type", recordType) : ""}
       <div class="genre-control">
         <label>
@@ -237,11 +264,11 @@ const renderHome = () => {
         </label>
         <button class="outline" data-action="add-genre">追加</button>
       </div>
-      <label class="image-control">
+      ${imageEnabled ? `<label class="image-control">
         <span>画像</span>
         <input id="image-input" type="file" accept="image/*" />
         <small id="image-status">${pendingImageDataUrl ? "画像選択済み" : "添付なし"}</small>
-      </label>
+      </label>` : ""}
       <button class="primary" data-action="record">記録</button>
     </section>
 
@@ -307,6 +334,32 @@ const renderRecordDetail = (recordId: string) => {
     </section>
   `;
 };
+
+const renderSettings = () => `
+  <section class="panel settings-panel">
+    <div class="setting-row">
+      <div class="setting-copy">
+        <strong>収入表示</strong>
+        <small>オンで収入も表示、オフで支出だけ</small>
+      </div>
+      ${renderSwitch("toggle-income", showIncome, "収入表示")}
+    </div>
+    <div class="setting-row">
+      <div class="setting-copy">
+        <strong>画像添付</strong>
+        <small>オンで記録時に画像欄を表示</small>
+      </div>
+      ${renderSwitch("toggle-images", imageEnabled, "画像添付")}
+    </div>
+    <label class="setting-row setting-row-input">
+      <div class="setting-copy">
+        <strong>月の開始日</strong>
+        <small>1なら通常の月、25なら25日から新しい月</small>
+      </div>
+      <input id="month-start-day-input" type="number" min="1" max="31" value="${settings.monthStartDay}" />
+    </label>
+  </section>
+`;
 
 const renderPast = () => {
   const monthTotals = getMonthTotals(state.records);
@@ -382,6 +435,18 @@ const renderSegment = (name: string, value: MoneyType) => `
   </div>
 `;
 
+const renderSwitch = (action: string, checked: boolean, label: string) => `
+  <button
+    class="setting-switch ${checked ? "on" : ""}"
+    data-action="${action}"
+    role="switch"
+    aria-checked="${checked}"
+    aria-label="${label}"
+  >
+    <span></span>
+  </button>
+`;
+
 const renderTopbarMenu = () => `
   <div class="topbar-menu">
     <button class="menu-button" data-action="menu-toggle" aria-label="メニュー" aria-expanded="${menuOpen}">
@@ -392,9 +457,7 @@ const renderTopbarMenu = () => `
     ${menuOpen ? `
       <div class="menu-panel">
         <button class="menu-item" data-action="past">過去</button>
-        <button class="menu-item" data-action="toggle-income">
-          ${showIncome ? "収入OFFにする" : "収入ONにする"}
-        </button>
+        <button class="menu-item" data-action="settings">設定</button>
       </div>
     ` : ""}
   </div>
@@ -446,11 +509,16 @@ const wireEvents = () => {
   document.querySelector<HTMLInputElement>("#image-input")?.addEventListener("change", (event) => {
     void handleImageInput(event.currentTarget as HTMLInputElement);
   });
+
+  document.querySelector<HTMLInputElement>("#month-start-day-input")?.addEventListener("change", (event) => {
+    setMonthStartDay(Number((event.currentTarget as HTMLInputElement).value));
+  });
 };
 
 const handleAction = (element: HTMLElement) => {
   const action = element.dataset.action;
   if (action === "past") setScreen({ name: "past" });
+  if (action === "settings") setScreen({ name: "settings" });
   if (action === "back") goBack();
   if (action === "add-genre") addGenre();
   if (action === "record") addRecord();
@@ -461,10 +529,11 @@ const handleAction = (element: HTMLElement) => {
     render();
   }
   if (action === "toggle-income") setShowIncome(!showIncome);
+  if (action === "toggle-images") setImageEnabled(!imageEnabled);
   if (action === "record-type") setRecordType(readMoneyType(element));
   if (action === "summary-type") setSummaryType(readMoneyType(element));
   if (action === "analysis-type") setAnalysisType(readMoneyType(element));
-  if (action === "genre-current") openGenre(getCurrentStamp().yearMonth, summaryType, element.dataset.genre);
+  if (action === "genre-current") openGenre(getCurrentStamp(settings.monthStartDay).yearMonth, summaryType, element.dataset.genre);
   if (action === "genre-month" && screen.name === "month") openGenre(screen.yearMonth, summaryType, element.dataset.genre);
   if (action === "open-record" && element.dataset.record) setScreen({ name: "record", recordId: element.dataset.record });
   if (action === "open-month" && element.dataset.month) setScreen({ name: "month", yearMonth: element.dataset.month });
@@ -484,7 +553,7 @@ const goBack = () => {
     return;
   }
   if (screen.name === "genre") {
-    const currentMonth = getCurrentStamp().yearMonth;
+    const currentMonth = getCurrentStamp(settings.monthStartDay).yearMonth;
     setScreen(screen.yearMonth === currentMonth ? { name: "home" } : { name: "month", yearMonth: screen.yearMonth });
     return;
   }
@@ -493,11 +562,24 @@ const goBack = () => {
 
 const currentGenres = () => state.genres.filter((genre) => genre.type === recordType);
 
+function applyMonthStartDay(nextState: AppState, monthStartDay: number): AppState {
+  return {
+    ...nextState,
+    records: nextState.records.map((record) => {
+      const { year, yearMonth } = getYearMonthFromIso(record.createdAt, monthStartDay);
+      return { ...record, year, yearMonth };
+    })
+  };
+}
+
 function firstGenreId(type: MoneyType) {
   return state.genres.find((genre) => genre.type === type)?.id ?? "";
 }
 
 const readMoneyType = (element: HTMLElement): MoneyType => element.dataset.type === "income" ? "income" : "expense";
+
+const normalizeMonthStartDay = (value: number) =>
+  Number.isFinite(value) ? Math.min(31, Math.max(1, Math.trunc(value))) : 1;
 
 const handleImageInput = async (input: HTMLInputElement) => {
   const file = input.files?.[0];
@@ -569,6 +651,7 @@ const hasRecordImage = (record: MoneyRecord) => Boolean(safeImageDataUrl(record.
 
 const screenTitle = (current: Screen) => {
   if (current.name === "past") return "過去";
+  if (current.name === "settings") return "設定";
   if (current.name === "month") return formatYearMonth(current.yearMonth);
   if (current.name === "genre") return "明細";
   if (current.name === "record") return "記録";

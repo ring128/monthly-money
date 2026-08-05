@@ -213,6 +213,81 @@ button:focus-visible {
   background: #f8fafc;
 }
 
+.settings-panel {
+  gap: 0;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 66px;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 12px 0;
+}
+
+.setting-row:first-child {
+  padding-top: 0;
+}
+
+.setting-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.setting-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.setting-copy strong {
+  color: #111827;
+  font-weight: 850;
+}
+
+.setting-copy small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.setting-switch {
+  position: relative;
+  flex: 0 0 auto;
+  width: 56px;
+  height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: #cbd5e1;
+  padding: 3px;
+}
+
+.setting-switch span {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #ffffff;
+  box-shadow: 0 2px 5px rgb(15 23 42 / 0.22);
+  transition: transform 160ms ease;
+}
+
+.setting-switch.on {
+  background: #0f766e;
+}
+
+.setting-switch.on span {
+  transform: translateX(22px);
+}
+
+.setting-row-input input {
+  flex: 0 0 86px;
+  text-align: center;
+  font-weight: 850;
+}
+
 .segmented {
   display: grid;
   grid-template-columns: 1fr 1fr;

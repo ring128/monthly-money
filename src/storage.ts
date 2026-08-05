@@ -9,7 +9,9 @@ export const emptyState: AppState = {
 };
 
 export const defaultSettings: AppSettings = {
-  showIncome: true
+  showIncome: true,
+  imageEnabled: true,
+  monthStartDay: 1
 };
 
 export const loadState = (): AppState => {
@@ -49,5 +51,12 @@ export const saveSettings = (settings: AppSettings) => {
 };
 
 export const normalizeSettings = (settings: Partial<AppSettings>): AppSettings => ({
-  showIncome: typeof settings.showIncome === "boolean" ? settings.showIncome : defaultSettings.showIncome
+  showIncome: typeof settings.showIncome === "boolean" ? settings.showIncome : defaultSettings.showIncome,
+  imageEnabled: typeof settings.imageEnabled === "boolean" ? settings.imageEnabled : defaultSettings.imageEnabled,
+  monthStartDay: normalizeMonthStartDay(settings.monthStartDay)
 });
+
+const normalizeMonthStartDay = (value: unknown) =>
+  typeof value === "number" && Number.isFinite(value)
+    ? Math.min(31, Math.max(1, Math.trunc(value)))
+    : defaultSettings.monthStartDay;
