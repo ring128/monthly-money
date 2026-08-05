@@ -114,6 +114,22 @@ select {
   outline: none;
 }
 
+input[type="file"] {
+  height: auto;
+  min-height: 48px;
+  padding: 10px 12px;
+}
+
+input[type="file"]::file-selector-button {
+  margin-right: 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  color: #334155;
+  background: #ffffff;
+  padding: 6px 10px;
+  font-weight: 800;
+}
+
 input:focus,
 select:focus,
 button:focus-visible {
@@ -126,6 +142,16 @@ button:focus-visible {
   grid-template-columns: 1fr 78px;
   gap: 10px;
   align-items: end;
+}
+
+.image-control {
+  gap: 6px;
+}
+
+.image-control small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 .topbar-menu {
@@ -342,11 +368,13 @@ button:focus-visible {
   justify-content: space-between;
   gap: 12px;
   padding: 10px 0;
+  text-align: left;
 }
 
 .record-row div {
   display: grid;
   gap: 4px;
+  min-width: 0;
 }
 
 .record-row strong {
@@ -361,6 +389,35 @@ button:focus-visible {
 .record-row span {
   flex: none;
   font-weight: 850;
+}
+
+.record-detail {
+  gap: 16px;
+}
+
+.record-detail-head {
+  display: grid;
+  gap: 6px;
+}
+
+.record-detail-head small {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.record-detail-head strong {
+  font-size: 24px;
+  font-weight: 900;
+}
+
+.record-image {
+  display: block;
+  width: 100%;
+  max-height: 70vh;
+  border-radius: 8px;
+  object-fit: contain;
+  background: #f8fafc;
 }
 
 .empty {

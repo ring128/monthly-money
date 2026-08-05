@@ -15,6 +15,7 @@ export type MoneyRecord = {
   createdAt: string;
   yearMonth: string;
   year: number;
+  imageDataUrl?: string;
 };
 
 export type AppState = {
@@ -51,4 +52,5 @@ export type Screen =
   | { name: "past" }
   | { name: "month"; yearMonth: string }
   | { name: "genre"; yearMonth: string; type: MoneyType; genreId: string }
+  | { name: "record"; recordId: string }
   | { name: "year"; year: number };

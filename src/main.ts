@@ -23,6 +23,8 @@ let analysisType: MoneyType = "expense";
 let showIncome = settings.showIncome;
 let menuOpen = false;
 let selectedGenreId = firstGenreId(recordType);
+let pendingImageDataUrl = "";
+let pendingImageBusy = false;
 
 const persist = () => saveState(state);
 const persistSettings = () => saveSettings(settings);
@@ -101,6 +103,10 @@ const addRecord = () => {
   const amount = Number((amountInput?.value ?? "").replace(/[^\d]/g, ""));
   const genreId = genreSelect?.value || selectedGenreId;
 
+  if (pendingImageBusy) {
+    showToast("画像の処理中です");
+    return;
+  }
   if (!title) {
     showToast("タイトルを入力して");
     return;
@@ -123,15 +129,23 @@ const addRecord = () => {
     genreId,
     createdAt: stamp.createdAt,
     yearMonth: stamp.yearMonth,
-    year: stamp.year
+    year: stamp.year,
+    imageDataUrl: pendingImageDataUrl || undefined
   };
 
-  state = {
+  const nextState = {
     ...state,
     records: [record, ...state.records]
   };
+  try {
+    saveState(nextState);
+  } catch {
+    showToast("保存容量が足りません");
+    return;
+  }
+  state = nextState;
   selectedGenreId = genreId;
-  persist();
+  pendingImageDataUrl = "";
   render();
   showToast("記録しました");
 };
@@ -190,6 +204,7 @@ const renderScreen = () => {
   if (screen.name === "past") return renderPast();
   if (screen.name === "month") return renderMonth(screen.yearMonth);
   if (screen.name === "genre") return renderGenre(screen);
+  if (screen.name === "record") return renderRecordDetail(screen.recordId);
   if (screen.name === "year") return renderYear(screen.year);
   return renderHome();
 };
@@ -222,6 +237,11 @@ const renderHome = () => {
         </label>
         <button class="outline" data-action="add-genre">追加</button>
       </div>
+      <label class="image-control">
+        <span>画像</span>
+        <input id="image-input" type="file" accept="image/*" />
+        <small id="image-status">${pendingImageDataUrl ? "画像選択済み" : "添付なし"}</small>
+      </label>
       <button class="primary" data-action="record">記録</button>
     </section>
 
@@ -257,6 +277,33 @@ const renderGenre = (detail: Extract<Screen, { name: "genre" }>) => {
     <section class="panel">
       <h2>${formatYearMonth(detail.yearMonth)} / ${typeLabel[detail.type]} / ${escapeHtml(genre?.name ?? "未分類")}</h2>
       ${records.length === 0 ? `<p class="empty">記録なし</p>` : records.map(renderRecordRow).join("")}
+    </section>
+  `;
+};
+
+const renderRecordDetail = (recordId: string) => {
+  const record = state.records.find((item) => item.id === recordId);
+  if (!record) {
+    return `
+      <section class="panel">
+        <p class="empty">記録が見つかりません</p>
+      </section>
+    `;
+  }
+
+  const genre = state.genres.find((item) => item.id === record.genreId);
+  const imageSrc = safeImageDataUrl(record.imageDataUrl);
+
+  return `
+    <section class="panel record-detail">
+      <div class="record-detail-head">
+        <small>${typeLabel[record.type]} / ${escapeHtml(genre?.name ?? "未分類")} / ${formatRecordDateTime(record.createdAt)}</small>
+        <h2>${escapeHtml(record.title)}</h2>
+        <strong class="${record.type === "expense" ? "expense" : "income"}">${yen(record.amount)}</strong>
+      </div>
+      ${imageSrc
+        ? `<img class="record-image" src="${imageSrc}" alt="${escapeHtml(record.title)}の画像" />`
+        : `<p class="empty">画像なし</p>`}
     </section>
   `;
 };
@@ -378,13 +425,13 @@ const renderGenreTotals = (items: GenreTotal[], emptyText: string, action: strin
 };
 
 const renderRecordRow = (record: MoneyRecord) => `
-  <div class="record-row">
+  <button class="record-row" data-action="open-record" data-record="${record.id}">
     <div>
       <strong>${escapeHtml(record.title)}</strong>
-      <small>自動保存: ${formatRecordDateTime(record.createdAt)}</small>
+      <small>自動保存: ${formatRecordDateTime(record.createdAt)}${hasRecordImage(record) ? " / 画像あり" : ""}</small>
     </div>
     <span class="${record.type === "expense" ? "expense" : "income"}">${yen(record.amount)}</span>
-  </div>
+  </button>
 `;
 
 const wireEvents = () => {
@@ -394,6 +441,10 @@ const wireEvents = () => {
 
   document.querySelector<HTMLSelectElement>("#genre-select")?.addEventListener("change", (event) => {
     selectedGenreId = (event.currentTarget as HTMLSelectElement).value;
+  });
+
+  document.querySelector<HTMLInputElement>("#image-input")?.addEventListener("change", (event) => {
+    void handleImageInput(event.currentTarget as HTMLInputElement);
   });
 };
 
@@ -415,6 +466,7 @@ const handleAction = (element: HTMLElement) => {
   if (action === "analysis-type") setAnalysisType(readMoneyType(element));
   if (action === "genre-current") openGenre(getCurrentStamp().yearMonth, summaryType, element.dataset.genre);
   if (action === "genre-month" && screen.name === "month") openGenre(screen.yearMonth, summaryType, element.dataset.genre);
+  if (action === "open-record" && element.dataset.record) setScreen({ name: "record", recordId: element.dataset.record });
   if (action === "open-month" && element.dataset.month) setScreen({ name: "month", yearMonth: element.dataset.month });
   if (action === "open-year" && element.dataset.year) setScreen({ name: "year", year: Number(element.dataset.year) });
 };
@@ -425,6 +477,12 @@ const openGenre = (yearMonth: string, type: MoneyType, genreId?: string) => {
 };
 
 const goBack = () => {
+  if (screen.name === "record") {
+    const recordId = screen.recordId;
+    const record = state.records.find((item) => item.id === recordId);
+    setScreen(record ? { name: "genre", yearMonth: record.yearMonth, type: record.type, genreId: record.genreId } : { name: "home" });
+    return;
+  }
   if (screen.name === "genre") {
     const currentMonth = getCurrentStamp().yearMonth;
     setScreen(screen.yearMonth === currentMonth ? { name: "home" } : { name: "month", yearMonth: screen.yearMonth });
@@ -441,10 +499,79 @@ function firstGenreId(type: MoneyType) {
 
 const readMoneyType = (element: HTMLElement): MoneyType => element.dataset.type === "income" ? "income" : "expense";
 
+const handleImageInput = async (input: HTMLInputElement) => {
+  const file = input.files?.[0];
+  pendingImageDataUrl = "";
+  if (!file) {
+    setImageStatus("添付なし");
+    return;
+  }
+  if (!file.type.startsWith("image/")) {
+    input.value = "";
+    showToast("画像ファイルを選んで");
+    setImageStatus("添付なし");
+    return;
+  }
+
+  pendingImageBusy = true;
+  setImageStatus("画像処理中...");
+  try {
+    pendingImageDataUrl = await resizeImage(file);
+    setImageStatus("画像選択済み");
+  } catch {
+    pendingImageDataUrl = "";
+    input.value = "";
+    setImageStatus("添付なし");
+    showToast("画像を読み込めませんでした");
+  } finally {
+    pendingImageBusy = false;
+  }
+};
+
+const resizeImage = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error("Failed to read image"));
+    reader.onload = () => {
+      const source = String(reader.result ?? "");
+      const image = new Image();
+      image.onerror = () => reject(new Error("Failed to load image"));
+      image.onload = () => {
+        const maxSize = 1000;
+        const scale = Math.min(1, maxSize / Math.max(image.width, image.height));
+        const width = Math.max(1, Math.round(image.width * scale));
+        const height = Math.max(1, Math.round(image.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const context = canvas.getContext("2d");
+        if (!context) {
+          resolve(source);
+          return;
+        }
+        context.drawImage(image, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", 0.72));
+      };
+      image.src = source;
+    };
+    reader.readAsDataURL(file);
+  });
+
+const setImageStatus = (message: string) => {
+  const status = document.querySelector<HTMLElement>("#image-status");
+  if (status) status.textContent = message;
+};
+
+const safeImageDataUrl = (value?: string) =>
+  value && /^data:image\/(?:jpeg|jpg|png|webp|gif);base64,[a-z0-9+/=]+$/i.test(value) ? value : "";
+
+const hasRecordImage = (record: MoneyRecord) => Boolean(safeImageDataUrl(record.imageDataUrl));
+
 const screenTitle = (current: Screen) => {
   if (current.name === "past") return "過去";
   if (current.name === "month") return formatYearMonth(current.yearMonth);
   if (current.name === "genre") return "明細";
+  if (current.name === "record") return "記録";
   if (current.name === "year") return `${current.year}年分析`;
   return "";
 };
