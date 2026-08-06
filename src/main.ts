@@ -1,5 +1,5 @@
 import { getGenreTotals, getMonthTotal, getMonthTotals, getRecordsForGenre, getYearTotals } from "./analytics";
-import { formatRecordDateTime, formatYearMonth, getCurrentStamp, getStampForDate, getTodayInputValue, getYearMonthFromIso } from "./date";
+import { formatRecordDateTime, formatYearMonth, getCurrentStamp, getYearMonthFromIso } from "./date";
 import { signedYen, yen } from "./format";
 import { renderPieChart, wirePieInteractions } from "./pie";
 import "./styles.css";
@@ -119,7 +119,6 @@ const addGenre = () => {
 const addRecord = () => {
   const titleInput = document.querySelector<HTMLInputElement>("#title-input");
   const amountInput = document.querySelector<HTMLInputElement>("#amount-input");
-  const dateInput = document.querySelector<HTMLInputElement>("#date-input");
   const genreSelect = document.querySelector<HTMLSelectElement>("#genre-select");
   const title = titleInput?.value.trim() ?? "";
   const amount = Number((amountInput?.value ?? "").replace(/[^\d]/g, ""));
@@ -142,7 +141,7 @@ const addRecord = () => {
     return;
   }
 
-  const stamp = getStampForDate(dateInput?.value ?? getTodayInputValue(), settings.monthStartDay);
+  const stamp = getCurrentStamp(settings.monthStartDay);
   const record: MoneyRecord = {
     id: createId("record"),
     title,
@@ -250,10 +249,6 @@ const renderHome = () => {
           <input id="amount-input" inputmode="numeric" placeholder="0" />
         </label>
       </div>
-      <label>
-        <span>日付</span>
-        <input id="date-input" type="date" value="${getTodayInputValue()}" />
-      </label>
       ${showIncome ? renderSegment("record-type", recordType) : ""}
       <div class="genre-control">
         <label>
@@ -340,21 +335,18 @@ const renderSettings = () => `
     <div class="setting-row">
       <div class="setting-copy">
         <strong>収入表示</strong>
-        <small>オンで収入も表示、オフで支出だけ</small>
       </div>
       ${renderSwitch("toggle-income", showIncome, "収入表示")}
     </div>
     <div class="setting-row">
       <div class="setting-copy">
         <strong>画像添付</strong>
-        <small>オンで記録時に画像欄を表示</small>
       </div>
       ${renderSwitch("toggle-images", imageEnabled, "画像添付")}
     </div>
     <label class="setting-row setting-row-input">
       <div class="setting-copy">
         <strong>月の開始日</strong>
-        <small>1なら通常の月、25なら25日から新しい月</small>
       </div>
       <input id="month-start-day-input" type="number" min="1" max="31" value="${settings.monthStartDay}" />
     </label>

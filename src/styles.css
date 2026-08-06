@@ -247,12 +247,6 @@ button:focus-visible {
   font-weight: 850;
 }
 
-.setting-copy small {
-  color: #64748b;
-  font-size: 12px;
-  font-weight: 700;
-}
-
 .setting-switch {
   position: relative;
   flex: 0 0 auto;
