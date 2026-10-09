@@ -23,7 +23,6 @@ https://ring128.github.io/monthly-money/
 - JSONでバックアップ/復元
 - 広告なし
 - ログインなし
-- バックエンドなし
 
 ## コンセプト
 
@@ -46,8 +45,6 @@ https://ring128.github.io/monthly-money/
 - localStorage
 - GitHub Pages
 - PWA
-
-Reactやバックエンドは使わず、TypeScript中心で実装しています。
 
 ## データ保存について
 
